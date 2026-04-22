@@ -257,6 +257,8 @@ select:disabled {
   padding: 10px;
   border-radius: 22px;
   background: rgba(4, 11, 20, 0.82);
+  touch-action: none;
+  user-select: none;
 }
 
 .grid-cell {
@@ -265,6 +267,7 @@ select:disabled {
   border: none;
   border-radius: 7px;
   background: linear-gradient(180deg, #f5f9ff, #d9e7f7);
+  -webkit-user-select: none;
 }
 
 .grid-cell.start,

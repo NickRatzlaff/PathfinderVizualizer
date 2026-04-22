@@ -64,6 +64,35 @@ const sleep = (delay) =>
     window.setTimeout(resolve, delay);
   });
 
+/**
+ * Set wall state for one cell and clear path visualization like a toggle does.
+ * @param {"add" | "remove"} mode
+ */
+const applyWallPaint = (setGrid, row, col, mode) => {
+  const nextWall = mode === "add";
+
+  setGrid((currentGrid) =>
+    currentGrid.map((currentRow) =>
+      currentRow.map((node) => {
+        if (node.row === row && node.col === col && !node.isStart && !node.isEnd) {
+          return {
+            ...node,
+            isWall: nextWall,
+            isVisited: false,
+            isPath: false,
+          };
+        }
+
+        if (node.isVisited || node.isPath) {
+          return { ...node, isVisited: false, isPath: false };
+        }
+
+        return node;
+      })
+    )
+  );
+};
+
 function App() {
   const [startNode, setStartNode] = useState({ row: 4, col: 6 });
   const [endNode, setEndNode] = useState({ row: 12, col: 24 });
@@ -75,10 +104,58 @@ function App() {
   const [status, setStatus] = useState("Choose a tool, sketch some walls, and run an algorithm.");
   const [isAnimating, setIsAnimating] = useState(false);
   const animationTokenRef = useRef(0);
+  const wallDragRef = useRef({ active: false, mode: null });
+  const lastWallPaintKeyRef = useRef(null);
 
   useEffect(() => {
     return () => {
       animationTokenRef.current += 1;
+    };
+  }, []);
+
+  useEffect(() => {
+    const endWallDrag = () => {
+      const wasPainting = wallDragRef.current.active;
+      wallDragRef.current = { active: false, mode: null };
+      lastWallPaintKeyRef.current = null;
+
+      if (wasPainting) {
+        setStatus("Walls updated. Run the search when you are ready.");
+      }
+    };
+
+    const handlePointerMove = (event) => {
+      const drag = wallDragRef.current;
+      if (!drag.active || drag.mode === null) {
+        return;
+      }
+
+      const target = document.elementFromPoint(event.clientX, event.clientY);
+      const cellButton = target?.closest?.("[data-grid-cell]");
+      if (!cellButton) {
+        return;
+      }
+
+      const row = Number(cellButton.dataset.row);
+      const col = Number(cellButton.dataset.col);
+      const key = `${row}-${col}`;
+
+      if (key === lastWallPaintKeyRef.current) {
+        return;
+      }
+
+      lastWallPaintKeyRef.current = key;
+      applyWallPaint(setGrid, row, col, drag.mode);
+    };
+
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", endWallDrag);
+    window.addEventListener("pointercancel", endWallDrag);
+
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", endWallDrag);
+      window.removeEventListener("pointercancel", endWallDrag);
     };
   }, []);
 
@@ -101,12 +178,14 @@ function App() {
     );
   };
 
-  const handleCellClick = (row, col) => {
-    if (isAnimating) {
+  const handlePlacementPointerDown = (event, row, col) => {
+    if (event.button !== 0) {
       return;
     }
 
-    const key = `${row}-${col}`;
+    if (isAnimating) {
+      return;
+    }
 
     if (activeTool === "start") {
       if (row === endNode.row && col === endNode.col) {
@@ -132,35 +211,22 @@ function App() {
       return;
     }
 
-    setGrid((currentGrid) =>
-      currentGrid.map((currentRow) =>
-        currentRow.map((node) => {
-          if (node.row !== row || node.col !== col || node.isStart || node.isEnd) {
-            if (node.isVisited || node.isPath) {
-              return {
-                ...node,
-                isVisited: false,
-                isPath: false,
-              };
-            }
+    const node = grid[row][col];
 
-            return node;
-          }
+    if (node.isStart || node.isEnd) {
+      return;
+    }
 
-          return {
-            ...node,
-            isWall: !node.isWall,
-            isVisited: false,
-            isPath: false,
-          };
-        })
-      )
-    );
+    const mode = node.isWall ? "remove" : "add";
+
+    wallDragRef.current = { active: true, mode };
+    lastWallPaintKeyRef.current = `${row}-${col}`;
+    applyWallPaint(setGrid, row, col, mode);
 
     setStatus(
-      grid[row][col].isWall
-        ? "Wall removed. The grid is ready for another run."
-        : "Wall placed. Add more obstacles or start the search."
+      mode === "remove"
+        ? "Erasing walls. Release the mouse or lift your finger to finish."
+        : "Painting walls. Drag across the grid to sketch obstacles."
     );
   };
 
@@ -364,7 +430,9 @@ function App() {
         <div className="grid-header">
           <div>
             <h2>Traversal Grid</h2>
-            <p>Click cells using the selected tool to design the maze.</p>
+            <p>
+              Click or click-drag with the wall tool to paint obstacles; use start/end tools for nodes.
+            </p>
           </div>
           <div className="status-pill">{status}</div>
         </div>
@@ -378,7 +446,10 @@ function App() {
               key={`${node.row}-${node.col}`}
               type="button"
               className={getCellClassName(node)}
-              onClick={() => handleCellClick(node.row, node.col)}
+              data-grid-cell
+              data-row={node.row}
+              data-col={node.col}
+              onPointerDown={(event) => handlePlacementPointerDown(event, node.row, node.col)}
               aria-label={`Row ${node.row + 1}, Column ${node.col + 1}`}
             />
           ))}
