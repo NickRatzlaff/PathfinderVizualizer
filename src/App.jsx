@@ -1,5 +1,20 @@
 import { useEffect, useRef, useState } from "react";
-import { aStar, bfs, dijkstra } from "./algorithms";
+import {
+  aStar,
+  bestFirstSearchWithTieBreaker,
+  beamSearch,
+  bfs,
+  bidirectionalBfs,
+  depthLimitedSearch,
+  dfs,
+  dijkstra,
+  greedyBestFirstSearch,
+  iterativeDeepeningDfs,
+  recursiveBacktrackingDfs,
+  uniformCostSearch,
+  weightedAStar,
+  zeroOneBfs,
+} from "./algorithms";
 
 const ROWS = 18;
 const COLS = 32;
@@ -21,6 +36,61 @@ const algorithms = {
     label: "A* Search",
     helper: "Uses a Manhattan-distance heuristic to reach the goal more directly.",
     run: aStar,
+  },
+  dfs: {
+    label: "Depth-First Search (DFS)",
+    helper: "Dives deep along one route before backtracking through alternatives.",
+    run: dfs,
+  },
+  greedyBestFirstSearch: {
+    label: "Greedy Best-First Search",
+    helper: "Follows the most promising heuristic estimate, often fast but not optimal.",
+    run: greedyBestFirstSearch,
+  },
+  weightedAStar: {
+    label: "Weighted A*",
+    helper: "Biases heuristic guidance more strongly to speed up routing decisions.",
+    run: weightedAStar,
+  },
+  bidirectionalBfs: {
+    label: "Bidirectional BFS",
+    helper: "Searches from start and target simultaneously to meet in the middle.",
+    run: bidirectionalBfs,
+  },
+  depthLimitedSearch: {
+    label: "Depth-Limited Search",
+    helper: "DFS with a strict depth cap to keep exploration bounded.",
+    run: depthLimitedSearch,
+  },
+  iterativeDeepeningDfs: {
+    label: "Iterative Deepening DFS",
+    helper: "Repeats depth-limited DFS with increasing limits to recover shallow paths.",
+    run: iterativeDeepeningDfs,
+  },
+  recursiveBacktrackingDfs: {
+    label: "Recursive Backtracking DFS",
+    helper: "Recursive depth-first exploration with explicit backtracking behavior.",
+    run: recursiveBacktrackingDfs,
+  },
+  beamSearch: {
+    label: "Beam Search",
+    helper: "Keeps only top candidates per layer for aggressive pruning.",
+    run: beamSearch,
+  },
+  zeroOneBfs: {
+    label: "0-1 BFS",
+    helper: "Deque-based shortest path for graphs with edge costs of 0 or 1.",
+    run: zeroOneBfs,
+  },
+  uniformCostSearch: {
+    label: "Uniform Cost Search",
+    helper: "Priority-based exploration by cumulative travel cost.",
+    run: uniformCostSearch,
+  },
+  bestFirstSearchWithTieBreaker: {
+    label: "Best-First Search (Tie-Breaker)",
+    helper: "Heuristic best-first search with deterministic tie-breaking for stability.",
+    run: bestFirstSearchWithTieBreaker,
   },
 };
 
